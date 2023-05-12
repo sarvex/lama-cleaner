@@ -26,9 +26,7 @@ class RemoveBG(BasePlugin):
     def forward(self, bgr_np_img) -> np.ndarray:
         from rembg import remove
 
-        # return BGRA image
-        output = remove(bgr_np_img, session=self.session)
-        return output
+        return remove(bgr_np_img, session=self.session)
 
     def check_dep(self):
         try:

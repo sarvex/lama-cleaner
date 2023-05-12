@@ -173,11 +173,11 @@ def _bias_act_ref(x, b=None, dim=1, act="linear", alpha=None, gain=None, clamp=N
         x = x + b.reshape([-1 if i == dim else 1 for i in range(x.ndim)])
 
     # Evaluate activation function.
-    alpha = float(alpha)
+    alpha = alpha
     x = spec.func(x, alpha=alpha)
 
     # Scale by gain.
-    gain = float(gain)
+    gain = gain
     if gain != 1:
         x = x * gain
 
@@ -241,8 +241,7 @@ def _get_filter_size(f):
 
 
 def _get_weight_shape(w):
-    shape = [int(sz) for sz in w.shape]
-    return shape
+    return [int(sz) for sz in w.shape]
 
 
 def _parse_scaling(scaling):
@@ -323,9 +322,7 @@ def setup_filter(
 
 def _ntuple(n):
     def parse(x):
-        if isinstance(x, collections.abc.Iterable):
-            return x
-        return tuple(repeat(x, n))
+        return x if isinstance(x, collections.abc.Iterable) else tuple(repeat(x, n))
 
     return parse
 
@@ -660,11 +657,10 @@ class FullyConnectedLayer(torch.nn.Module):
         if self.activation == "linear" and b is not None:
             # out = torch.addmm(b.unsqueeze(0), x, w.t())
             x = x.matmul(w.t())
-            out = x + b.reshape([-1 if i == x.ndim - 1 else 1 for i in range(x.ndim)])
+            return x + b.reshape([-1 if i == x.ndim - 1 else 1 for i in range(x.ndim)])
         else:
             x = x.matmul(w.t())
-            out = bias_act(x, b, act=self.activation, dim=x.ndim - 1)
-        return out
+            return bias_act(x, b, act=self.activation, dim=x.ndim - 1)
 
 
 def _conv2d_wrapper(
@@ -682,24 +678,27 @@ def _conv2d_wrapper(
     # Workaround performance pitfall in cuDNN 8.0.5, triggered when using
     # 1x1 kernel + memory_format=channels_last + less than 64 channels.
     if (
-        kw == 1
-        and kh == 1
-        and stride == 1
-        and padding in [0, [0, 0], (0, 0)]
-        and not transpose
+        (
+            kw == 1
+            and kh == 1
+            and stride == 1
+            and padding in [0, [0, 0], (0, 0)]
+            and not transpose
+        )
+        and x.stride()[1] == 1
+        and min(out_channels, in_channels_per_group) < 64
     ):
-        if x.stride()[1] == 1 and min(out_channels, in_channels_per_group) < 64:
-            if out_channels <= 4 and groups == 1:
-                in_shape = x.shape
-                x = w.squeeze(3).squeeze(2) @ x.reshape(
-                    [in_shape[0], in_channels_per_group, -1]
-                )
-                x = x.reshape([in_shape[0], out_channels, in_shape[2], in_shape[3]])
-            else:
-                x = x.to(memory_format=torch.contiguous_format)
-                w = w.to(memory_format=torch.contiguous_format)
-                x = conv2d(x, w, groups=groups)
-            return x.to(memory_format=torch.channels_last)
+        if out_channels <= 4 and groups == 1:
+            in_shape = x.shape
+            x = w.squeeze(3).squeeze(2) @ x.reshape(
+                [in_shape[0], in_channels_per_group, -1]
+            )
+            x = x.reshape([in_shape[0], out_channels, in_shape[2], in_shape[3]])
+        else:
+            x = x.to(memory_format=torch.contiguous_format)
+            w = w.to(memory_format=torch.contiguous_format)
+            x = conv2d(x, w, groups=groups)
+        return x.to(memory_format=torch.channels_last)
 
     # Otherwise => execute using conv2d_gradfix.
     op = conv_transpose2d if transpose else conv2d
@@ -822,11 +821,17 @@ def conv2d_resample(
         return x
 
     # Fast path: no up/downsampling, padding supported by the underlying implementation => use plain conv2d.
-    if up == 1 and down == 1:
-        if px0 == px1 and py0 == py1 and px0 >= 0 and py0 >= 0:
-            return _conv2d_wrapper(
-                x=x, w=w, padding=[py0, px0], groups=groups, flip_weight=flip_weight
-            )
+    if (
+        up == 1
+        and down == 1
+        and px0 == px1
+        and py0 == py1
+        and px0 >= 0
+        and py0 >= 0
+    ):
+        return _conv2d_wrapper(
+            x=x, w=w, padding=[py0, px0], groups=groups, flip_weight=flip_weight
+        )
 
     # Fallback: Generic reference implementation.
     x = upfirdn2d(
@@ -903,10 +908,9 @@ class Conv2dLayer(torch.nn.Module):
 
         act_gain = self.act_gain * gain
         act_clamp = self.conv_clamp * gain if self.conv_clamp is not None else None
-        out = bias_act(
+        return bias_act(
             x, self.bias, act=self.activation, gain=act_gain, clamp=act_clamp
         )
-        return out
 
 
 def torch_gc():

@@ -23,10 +23,9 @@ class PaintByExample(DiffusionInpaintModel):
 
         if kwargs['disable_nsfw'] or kwargs.get('cpu_offload', False):
             logger.info("Disable Paint By Example Model NSFW checker")
-            model_kwargs.update(dict(
-                safety_checker=None,
-                requires_safety_checker=False
-            ))
+            model_kwargs |= dict(
+                safety_checker=None, requires_safety_checker=False
+            )
 
         self.model = DiffusionPipeline.from_pretrained(
             "Fantasy-Studio/Paint-by-Example",

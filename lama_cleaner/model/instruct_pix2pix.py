@@ -20,11 +20,11 @@ class InstructPix2Pix(DiffusionInpaintModel):
         model_kwargs = {"local_files_only": kwargs.get('local_files_only', False)}
         if kwargs['disable_nsfw'] or kwargs.get('cpu_offload', False):
             logger.info("Disable Stable Diffusion Model NSFW checker")
-            model_kwargs.update(dict(
+            model_kwargs |= dict(
                 safety_checker=None,
                 feature_extractor=None,
-                requires_safety_checker=False
-            ))
+                requires_safety_checker=False,
+            )
 
         use_gpu = device == torch.device('cuda') and torch.cuda.is_available()
         torch_dtype = torch.float16 if use_gpu and fp16 else torch.float32

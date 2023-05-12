@@ -91,19 +91,17 @@ class ControlNet(DiffusionInpaintModel):
         }
         if kwargs["disable_nsfw"] or kwargs.get("cpu_offload", False):
             logger.info("Disable Stable Diffusion Model NSFW checker")
-            model_kwargs.update(
-                dict(
-                    safety_checker=None,
-                    feature_extractor=None,
-                    requires_safety_checker=False,
-                )
+            model_kwargs |= dict(
+                safety_checker=None,
+                feature_extractor=None,
+                requires_safety_checker=False,
             )
 
         use_gpu = device == torch.device("cuda") and torch.cuda.is_available()
         torch_dtype = torch.float16 if use_gpu and fp16 else torch.float32
 
         controlnet = ControlNetModel.from_pretrained(
-            f"lllyasviel/sd-controlnet-canny", torch_dtype=torch_dtype
+            "lllyasviel/sd-controlnet-canny", torch_dtype=torch_dtype
         )
         if kwargs.get("sd_local_model_path", None):
             self.model = load_from_local_model(

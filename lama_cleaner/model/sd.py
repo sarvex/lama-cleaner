@@ -78,12 +78,10 @@ class SD(DiffusionInpaintModel):
         }
         if kwargs["disable_nsfw"] or kwargs.get("cpu_offload", False):
             logger.info("Disable Stable Diffusion Model NSFW checker")
-            model_kwargs.update(
-                dict(
-                    safety_checker=None,
-                    feature_extractor=None,
-                    requires_safety_checker=False,
-                )
+            model_kwargs |= dict(
+                safety_checker=None,
+                feature_extractor=None,
+                requires_safety_checker=False,
             )
 
         use_gpu = device == torch.device("cuda") and torch.cuda.is_available()

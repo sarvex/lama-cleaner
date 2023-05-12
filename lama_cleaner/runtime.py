@@ -45,6 +45,6 @@ def dump_environment_info() -> Dict[str, str]:
         "Platform": platform.platform(),
         "Python version": platform.python_version(),
     }
-    info.update(_package_versions)
+    info |= _package_versions
     print("\n".join([f"- {prop}: {val}" for prop, val in info.items()]) + "\n")
     return info

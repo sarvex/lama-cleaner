@@ -168,11 +168,11 @@ def parse_args():
     if args.config_installer:
         if args.installer_config is None:
             parser.error(
-                f"args.config_installer==True, must set args.installer_config to store config file"
+                "args.config_installer==True, must set args.installer_config to store config file"
             )
         from lama_cleaner.web_config import main
 
-        logger.info(f"Launching installer web config page")
+        logger.info("Launching installer web config page")
         main(args.installer_config)
         exit()
 
@@ -194,9 +194,8 @@ def parse_args():
                 "torch.cuda.is_available() is False, please use --device cpu or check your pytorch installation"
             )
 
-    if args.sd_controlnet:
-        if args.model not in SD15_MODELS:
-            logger.warning(f"--sd_controlnet only support {SD15_MODELS}")
+    if args.sd_controlnet and args.model not in SD15_MODELS:
+        logger.warning(f"--sd_controlnet only support {SD15_MODELS}")
 
     if args.sd_local_model_path and args.model == "sd1.5":
         if not os.path.exists(args.sd_local_model_path):
@@ -226,19 +225,17 @@ def parse_args():
         if os.path.isfile(args.input):
             if imghdr.what(args.input) is None:
                 parser.error(f"invalid --input: {args.input} is not a valid image file")
-        else:
-            if args.output_dir is None:
-                parser.error(
-                    f"invalid --input: {args.input} is a directory, --output-dir is required"
-                )
+        elif args.output_dir is None:
+            parser.error(
+                f"invalid --input: {args.input} is a directory, --output-dir is required"
+            )
 
     if args.output_dir is not None:
         output_dir = Path(args.output_dir)
         if not output_dir.exists():
             logger.info(f"Creating output directory: {output_dir}")
             output_dir.mkdir(parents=True)
-        else:
-            if not output_dir.is_dir():
-                parser.error(f"invalid --output-dir: {output_dir} is not a directory")
+        elif not output_dir.is_dir():
+            parser.error(f"invalid --output-dir: {output_dir} is not a directory")
 
     return args
